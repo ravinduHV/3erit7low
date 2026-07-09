@@ -1,0 +1,54 @@
+# =============================================================================
+# MeritFlow Backend (FastAPI / Python) .gitignore
+# =============================================================================
+
+# ---- Secrets ----------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# ---- Python -----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+.eggs/
+pip-wheel-metadata/
+
+# ---- Virtual Environments ---------------------------------------------------
+venv/
+.venv/
+env/
+ENV/
+.virtualenv/
+.conda/
+
+# ---- Testing ----------------------------------------------------------------
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+nosetests.xml
+coverage.xml
+*.coveragerc
+
+# ---- Type checkers / linters ------------------------------------------------
+.mypy_cache/
+.dmypy.json
+.pyre/
+.ruff_cache/
+
+# ---- Alembic ----------------------------------------------------------------
+# Keep alembic versions, but not migration cache
+alembic/__pycache__/
+
+# ---- IDE -------------------------------------------------------------------
+.idea/
+.vscode/
+*.iml

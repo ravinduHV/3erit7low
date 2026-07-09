@@ -1,0 +1,28 @@
+# =============================================================================
+# MeritFlow — Root Monorepo .gitignore
+# =============================================================================
+
+# ---- Sensitive files (NEVER commit these) -----------------------------------
+*.env
+.env.*
+!.env.example
+sensitive_details.md
+flutter_error.md
+Context.md
+CriticalImplementations.md
+
+# ---- OS / Editor files ------------------------------------------------------
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.iml
+
+# ---- Temporary files --------------------------------------------------------
+*.log
+*.tmp
+*.bak
