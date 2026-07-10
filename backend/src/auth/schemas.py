@@ -1,13 +1,21 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import Optional
 from datetime import date, datetime
 
+
 class UserSyncRequest(BaseModel):
-    token: str
+    """
+    Body for POST /v1/auth/sync.
+    Called by Flutter right after sign-up or sign-in to register the user
+    in the local app database. The JWT is provided in the Authorization header
+    (not in the body) — it is validated by get_current_user before this runs.
+    """
     is_anonymous: bool = False
-    full_name: Optional[str] = None
+    full_name: Optional[str] = None  # Required for known-mode; ignored for anonymous
+
 
 class UserResponse(BaseModel):
+    """Full user profile returned by sync, GET /me, and PATCH /me."""
     id: str
     email: str
     is_anonymous: bool
