@@ -1,7 +1,7 @@
 {
-  "buildCommand": "flutter/bin/flutter build web --release --dart-define=AUTH_BASE_URL=$AUTH_BASE_URL --dart-define=API_BASE_URL=$API_BASE_URL",
-  "outputDirectory": "build/web",
-  "installCommand": "git clone https://github.com/flutter/flutter.git --depth 1 -b stable && flutter/bin/flutter pub get",
+  "buildCommand": "cd frontend && ../flutter/bin/flutter build web --release --dart-define=AUTH_BASE_URL=$AUTH_BASE_URL --dart-define=API_BASE_URL=$API_BASE_URL",
+  "outputDirectory": "frontend/build/web",
+  "installCommand": "git clone https://github.com/flutter/flutter.git --depth 1 -b stable && cd frontend && ../flutter/bin/flutter pub get",
   "framework": null,
   "routes": [
     {
