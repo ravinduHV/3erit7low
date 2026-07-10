@@ -39,9 +39,6 @@ class AuthRepositoryImpl implements AuthRepository {
     );
 
     final sessionToken = response.data['token'] as String;
-    debugPrint('=== NEON AUTH SIGN-IN SUCCESS ===');
-    debugPrint('Session Token: $sessionToken');
-    debugPrint('=================================');
 
     // 2. Exchange session token for a signed JWT (EdDSA)
     final jwt = await _exchangeForJwt(sessionToken);
@@ -77,9 +74,6 @@ class AuthRepositoryImpl implements AuthRepository {
     );
 
     final sessionToken = response.data['token'] as String;
-    debugPrint('=== NEON AUTH SIGN-UP SUCCESS ===');
-    debugPrint('Session Token: $sessionToken');
-    debugPrint('=================================');
 
     // 2. Exchange session token for a signed JWT
     final jwt = await _exchangeForJwt(sessionToken);
@@ -217,11 +211,7 @@ class AuthRepositoryImpl implements AuthRepository {
         throw Exception('Failed to retrieve JWT from Neon Auth /token endpoint');
       }
       return jwt;
-    } on DioException catch (e) {
-      debugPrint('=== NEON AUTH TOKEN EXCHANGE FAILED ===');
-      debugPrint('Status Code: ${e.response?.statusCode}');
-      debugPrint('Response Data: ${e.response?.data}');
-      debugPrint('=======================================');
+    } on DioException {
       rethrow;
     }
   }

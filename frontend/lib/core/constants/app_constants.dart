@@ -1,12 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 // ── Compile-time URL overrides (set via --dart-define) ────────────────────────
-// Auth now goes directly to the Neon Auth managed service (no local proxy).
-// Example production build:
-//   flutter build web \
-//     --dart-define=AUTH_BASE_URL=https://ep-xxx.neonauth.c-2.ap-southeast-1.aws.neon.tech/neondb/auth \
-//     --dart-define=API_BASE_URL=https://your-api.railway.app
-const String _kProductionAuthUrl = String.fromEnvironment(
+const String _kNeonAuthUrl = String.fromEnvironment(
   'AUTH_BASE_URL',
   defaultValue: '',
 );
@@ -15,18 +10,15 @@ const String _kProductionApiUrl = String.fromEnvironment(
   defaultValue: '',
 );
 
-// ── Neon Auth managed base URL (dev fallback) ─────────────────────────────────
-// This is the live Neon Auth endpoint — same URL in dev and prod (it's managed).
-const String _kNeonAuthDevUrl =
-    'https://ep-winter-silence-aofak107.neonauth.c-2.ap-southeast-1.aws.neon.tech/neondb/auth';
-
 class AppConstants {
   // ── Neon Auth Base URL ────────────────────────────────────────────────────
-  // Flutter calls this directly for sign-up, sign-in, sign-out.
-  // No localhost proxy needed — Neon Auth is a managed cloud service.
+  // Must be provided at build-time using --dart-define=AUTH_BASE_URL=https://...
   static String get authBaseUrl {
-    if (_kProductionAuthUrl.isNotEmpty) return _kProductionAuthUrl;
-    return _kNeonAuthDevUrl;
+    if (_kNeonAuthUrl.isNotEmpty) return _kNeonAuthUrl;
+    throw Exception(
+      'AUTH_BASE_URL is not set. Please run or compile the app using:\n'
+      '  --dart-define=AUTH_BASE_URL=https://<your-neonauth-domain>/neondb/auth'
+    );
   }
 
   // ── Origin header for Neon Auth requests ─────────────────────────────────
