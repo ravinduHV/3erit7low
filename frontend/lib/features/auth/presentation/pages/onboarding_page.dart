@@ -264,13 +264,19 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                               ),
                                             ),
                                             child: Center(
-                                              child: Text(
-                                                sec['name'],
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: isSelected ? color : Colors.white,
-                                                  fontSize: 13,
+                                              child: Padding(
+                                                padding: const EdgeInsets.all(4.0),
+                                                child: FittedBox(
+                                                  fit: BoxFit.scaleDown,
+                                                  child: Text(
+                                                    sec['name'],
+                                                    textAlign: TextAlign.center,
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.bold,
+                                                      color: isSelected ? color : Colors.white,
+                                                      fontSize: 13,
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
                                             ),

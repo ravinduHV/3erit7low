@@ -18,6 +18,7 @@ import 'features/dashboard/presentation/pages/dashboard_page.dart';
 import 'features/profile/presentation/pages/profile_page.dart';
 import 'features/profile/presentation/pages/privacy_settings_page.dart';
 import 'features/admin/presentation/pages/admin_syllabus_page.dart';
+import 'features/admin/presentation/pages/admin_section_awards_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -112,6 +113,16 @@ class _AppRouterState extends State<AppRouter> {
         GoRoute(
           path: '/admin-syllabus',
           builder: (context, state) => const AdminSyllabusPage(),
+        ),
+        GoRoute(
+          path: '/admin-section-awards',
+          builder: (context, state) {
+            final params = state.extra as Map<String, dynamic>;
+            return AdminSectionAwardsPage(
+              sectionId: params['sectionId'] as String,
+              sectionName: params['sectionName'] as String,
+            );
+          },
         ),
       ],
     );

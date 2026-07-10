@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/glass_card.dart';
@@ -144,6 +145,83 @@ class _AdminSyllabusPageState extends State<AdminSyllabusPage> {
     );
   }
 
+  Future<void> _showEditSectionDialog(dynamic sec) async {
+    final nameController = TextEditingController(text: sec['name']);
+    final slugController = TextEditingController(text: sec['slug']);
+    final colorController = TextEditingController(text: sec['color_hex']);
+    final minAgeController = TextEditingController(text: sec['min_age']?.toString() ?? '');
+    final maxAgeController = TextEditingController(text: sec['max_age']?.toString() ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Edit Section: ${sec['id']}"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: "Section Name"),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: slugController,
+                decoration: const InputDecoration(labelText: "Slug"),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: colorController,
+                decoration: const InputDecoration(labelText: "Color Hex Code"),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: minAgeController,
+                decoration: const InputDecoration(labelText: "Minimum Age"),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: maxAgeController,
+                decoration: const InputDecoration(labelText: "Maximum Age"),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await _dio.patch(
+                  '${AppConstants.apiBaseUrl}/v1/admin/sections/${sec['id']}',
+                  data: {
+                    'name': nameController.text.trim(),
+                    'slug': slugController.text.trim(),
+                    'color_hex': colorController.text.trim(),
+                    'min_age': double.tryParse(minAgeController.text),
+                    'max_age': double.tryParse(maxAgeController.text),
+                  },
+                );
+                Navigator.pop(context);
+                _loadSyllabus();
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Error updating section: ${e.toString()}")),
+                );
+              }
+            },
+            child: const Text("Save"),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -194,16 +272,28 @@ class _AdminSyllabusPageState extends State<AdminSyllabusPage> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    sec['name'],
-                                    style: theme.textTheme.titleLarge?.copyWith(
-                                      color: color,
-                                      fontWeight: FontWeight.bold,
+                                  Expanded(
+                                    child: Text(
+                                      sec['name'],
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.titleLarge?.copyWith(
+                                        color: color,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, color: AppColors.error),
-                                    onPressed: () => _deleteSection(sec['id']),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit, color: Colors.blueGrey),
+                                        onPressed: () => _showEditSectionDialog(sec),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: AppColors.error),
+                                        onPressed: () => _deleteSection(sec['id']),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -216,16 +306,13 @@ class _AdminSyllabusPageState extends State<AdminSyllabusPage> {
                               const Spacer(),
                               ElevatedButton(
                                 style: ElevatedButton.styleFrom(backgroundColor: color),
-                                onPressed: () {
-                                  // Navigate to section configuration details
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        "Configuring syllabus details for ${sec['name']}",
-                                      ),
-                                    ),
-                                  );
-                                },
+                                onPressed: () => context.push(
+                                  '/admin-section-awards',
+                                  extra: {
+                                    'sectionId': sec['id'],
+                                    'sectionName': sec['name'],
+                                  },
+                                ),
                                 child: const Text("Configure Awards"),
                               ),
                             ],

@@ -137,6 +137,29 @@ class ProfilePage extends StatelessWidget {
                 const SizedBox(height: 24),
               ],
 
+              // Admin Controls (Only visible to admin users)
+              if (user.role == 'admin') ...[
+                Text(
+                  "Admin Panel",
+                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                GlassCard(
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.admin_panel_settings, color: AppColors.secondary),
+                    title: const Text(
+                      "Manage Syllabus",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: const Text("Edit sections, awards, and requirements"),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () => context.push('/admin-syllabus'),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+
               // Privacy Controls
               Text(
                 "Privacy Settings",

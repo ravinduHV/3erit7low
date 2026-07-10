@@ -107,13 +107,16 @@ class _AwardsListPageState extends State<AwardsListPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            summary.name,
-                            style: theme.textTheme.displaySmall?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
+                          Expanded(
+                            child: Text(
+                              summary.name,
+                              style: theme.textTheme.displaySmall?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
+                          const SizedBox(width: 12),
                           Icon(
                             summary.id == 'leader'
                                 ? Icons.supervisor_account

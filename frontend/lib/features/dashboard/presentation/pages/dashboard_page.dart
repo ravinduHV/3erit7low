@@ -86,31 +86,48 @@ class _DashboardPageState extends State<DashboardPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Hello, ${user.displayName ?? 'Scout'}",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.displaySmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            if (user.sectionId != null)
+                              SectionChip(
+                                sectionName: user.sectionId!.toUpperCase(),
+                                sectionId: user.sectionId!,
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Header Actions Row (Admin Panel + Profile settings)
+                      Row(
                         children: [
-                          Text(
-                            "Hello, ${user.displayName ?? 'Scout'}",
-                            style: theme.textTheme.displaySmall?.copyWith(
-                              fontWeight: FontWeight.w800,
+                          if (user.role == 'admin') ...[
+                            IconButton(
+                              icon: const Icon(Icons.admin_panel_settings, color: AppColors.secondary, size: 30),
+                              tooltip: "Manage Syllabus",
+                              onPressed: () => context.push('/admin-syllabus'),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          GestureDetector(
+                            onTap: () => context.push('/profile'),
+                            child: CircleAvatar(
+                              radius: 26,
+                              backgroundColor: sectionColor.withOpacity(0.15),
+                              child: Icon(Icons.person, color: sectionColor, size: 28),
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          if (user.sectionId != null)
-                            SectionChip(
-                              sectionName: user.sectionId!.toUpperCase(),
-                              sectionId: user.sectionId!,
-                            ),
                         ],
-                      ),
-                      // Profile settings link button
-                      GestureDetector(
-                        onTap: () => context.push('/profile'),
-                        child: CircleAvatar(
-                          radius: 26,
-                          backgroundColor: sectionColor.withOpacity(0.15),
-                          child: Icon(Icons.person, color: sectionColor, size: 28),
-                        ),
                       ),
                     ],
                   ),

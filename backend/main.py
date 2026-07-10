@@ -11,6 +11,7 @@ app = FastAPI(
     title="Colorful Adventures - Scout Progress API",
     description="Backend API for managing scout syllabi, tracking progress, and running rule-based assistant tips.",
     version="1.0.0",
+    redirect_slashes=False,
 )
 
 # Set up CORS. Allow all for easy flutter client integration (web, mobile, emulator)
