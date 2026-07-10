@@ -409,6 +409,10 @@ async def get_scout_progress_summary(
                 min_service_months=award.min_service_months,
                 prerequisite_award_id=award.prerequisite_award_id,
                 is_optional=award.is_optional,
+                min_months_after_prereq_started=award.min_months_after_prereq_started,
+                start_date_follows_prereq=award.start_date_follows_prereq,
+                started_at=scout_award.started_at if scout_award else None,
+                completed_at=scout_award.completed_at if scout_award else None,
                 groups=award_groups_progress,
                 percent_completed=round(percent, 1),
                 is_completed=is_completed
@@ -500,3 +504,143 @@ async def evaluate_award_completions(
         )
         db.add(scout_award)
     await db.flush()
+
+
+# ─── AWARD-LEVEL DATE MANAGEMENT ──────────────────────────────────
+
+async def _get_prerequisite_chain(db: AsyncSession, award_id: str) -> list:
+    """
+    Returns all uncompleted ancestor awards (prerequisites, grandprerequisites, etc.)
+    in order from the oldest ancestor to the direct parent.
+    """
+    chain = []
+    visited = set()
+    current_id = award_id
+    while current_id:
+        if current_id in visited:
+            break  # Guard against circular references
+        visited.add(current_id)
+        award_res = await db.execute(select(Award).where(Award.id == current_id))
+        award = award_res.scalar_one_or_none()
+        if not award or not award.prerequisite_award_id:
+            break
+        chain.append(award.prerequisite_award_id)
+        current_id = award.prerequisite_award_id
+    # chain is [direct_parent, grandparent, ...] – reverse for oldest-first order
+    return list(reversed(chain))
+
+
+async def complete_award_with_propagation(
+    db: AsyncSession,
+    user_id: str,
+    award_id: str,
+    completed_at: Optional[date] = None,
+    propagate_to_parents: bool = True,
+) -> list[str]:
+    """
+    Marks an award (and optionally its entire prerequisite tree) as completed.
+    Returns list of award IDs that were completed by this call.
+
+    Parent propagation strategy:
+    - Walk up the prerequisite chain, collecting all ancestors.
+    - Each uncompleted ancestor is completed at `completed_at - N days` where N is
+      its distance from the target award (oldest ancestor gets the earliest date).
+    - The target award itself is completed at `completed_at`.
+    """
+    target_date = completed_at or date.today()
+    completed_ids = []
+
+    if propagate_to_parents:
+        ancestor_ids = await _get_prerequisite_chain(db, award_id)
+        # Complete ancestors oldest-first; each gets target_date minus its distance
+        from datetime import timedelta
+        for offset, ancestor_id in enumerate(ancestor_ids):
+            distance = len(ancestor_ids) - offset  # oldest ancestor = largest offset
+            ancestor_date = target_date - timedelta(days=distance)
+
+            sa_res = await db.execute(
+                select(ScoutAward).where(
+                    ScoutAward.user_id == user_id,
+                    ScoutAward.award_id == ancestor_id
+                )
+            )
+            sa = sa_res.scalar_one_or_none()
+            if sa:
+                if not sa.completed_at:
+                    sa.completed_at = ancestor_date
+                    if not sa.started_at or sa.started_at > ancestor_date:
+                        sa.started_at = ancestor_date
+                    completed_ids.append(ancestor_id)
+            else:
+                db.add(ScoutAward(
+                    id=str(uuid4()),
+                    user_id=user_id,
+                    award_id=ancestor_id,
+                    started_at=ancestor_date,
+                    completed_at=ancestor_date,
+                ))
+                completed_ids.append(ancestor_id)
+
+    # Complete the target award itself
+    sa_res = await db.execute(
+        select(ScoutAward).where(
+            ScoutAward.user_id == user_id,
+            ScoutAward.award_id == award_id
+        )
+    )
+    sa = sa_res.scalar_one_or_none()
+    if sa:
+        sa.completed_at = target_date
+        if not sa.started_at or sa.started_at > target_date:
+            sa.started_at = target_date
+    else:
+        db.add(ScoutAward(
+            id=str(uuid4()),
+            user_id=user_id,
+            award_id=award_id,
+            started_at=target_date,
+            completed_at=target_date,
+        ))
+    completed_ids.append(award_id)
+    await db.flush()
+    return completed_ids
+
+
+async def update_award_dates(
+    db: AsyncSession,
+    user_id: str,
+    award_id: str,
+    started_at: Optional[date] = None,
+    completed_at: Optional[date] = None,
+) -> ScoutAward:
+    """
+    Lets a member set custom start and/or completion dates for their ScoutAward record.
+    Creates the record if it doesn't exist yet.
+    """
+    sa_res = await db.execute(
+        select(ScoutAward).where(
+            ScoutAward.user_id == user_id,
+            ScoutAward.award_id == award_id
+        )
+    )
+    sa = sa_res.scalar_one_or_none()
+
+    if sa:
+        if started_at is not None:
+            sa.started_at = started_at
+        if completed_at is not None:
+            sa.completed_at = completed_at
+    else:
+        # Need at least a started_at to create the record
+        start = started_at or completed_at or date.today()
+        sa = ScoutAward(
+            id=str(uuid4()),
+            user_id=user_id,
+            award_id=award_id,
+            started_at=start,
+            completed_at=completed_at,
+        )
+        db.add(sa)
+
+    await db.flush()
+    return sa

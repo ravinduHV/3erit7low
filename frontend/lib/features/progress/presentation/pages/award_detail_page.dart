@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
+import 'package:get_it/get_it.dart';
 import '../../domain/entities/progress_entities.dart';
+import '../../domain/repositories/progress_repository.dart';
 import '../bloc/progress_bloc.dart';
 import '../bloc/progress_event.dart';
 import 'pool_selector_page.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/glass_card.dart';
 
-class AwardDetailPage extends StatelessWidget {
+class AwardDetailPage extends StatefulWidget {
   final AwardProgressEntity award;
 
   const AwardDetailPage({
@@ -16,12 +17,127 @@ class AwardDetailPage extends StatelessWidget {
     required this.award,
   }) : super(key: key);
 
+  @override
+  State<AwardDetailPage> createState() => _AwardDetailPageState();
+}
+
+class _AwardDetailPageState extends State<AwardDetailPage> {
+  bool _isSaving = false;
+  bool _propagateToParents = true;
+
+  AwardProgressEntity get award => widget.award;
+
+  String _formatDate(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  Future<void> _markCompleted(BuildContext context) async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      helpText: 'SELECT AWARD COMPLETION DATE',
+    );
+    if (pickedDate == null || !mounted) return;
+
+    setState(() => _isSaving = true);
+    try {
+      final repo = GetIt.instance<ProgressRepository>();
+      final completedIds = await repo.completeAward(
+        award.id,
+        completedAt: pickedDate,
+        propagateToParents: _propagateToParents,
+      );
+      if (!mounted) return;
+      // Refresh progress in bloc
+      context.read<ProgressBloc>().add(ProgressFetchRequested());
+      final autoCount = completedIds.length - 1;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          autoCount > 0
+              ? 'Award marked complete! Also auto-completed $autoCount prerequisite(s).'
+              : 'Award marked as completed on ${_formatDate(pickedDate)}.',
+        ),
+        backgroundColor: Colors.green,
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Error: $e'),
+        backgroundColor: AppColors.error,
+      ));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _editStartDate(BuildContext context) async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: award.startedAt ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      helpText: 'SET AWARD START DATE',
+    );
+    if (pickedDate == null || !mounted) return;
+
+    setState(() => _isSaving = true);
+    try {
+      final repo = GetIt.instance<ProgressRepository>();
+      await repo.updateAwardDates(award.id, startedAt: pickedDate);
+      if (!mounted) return;
+      context.read<ProgressBloc>().add(ProgressFetchRequested());
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Start date updated to ${_formatDate(pickedDate)}.'),
+        backgroundColor: Colors.blue,
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Error: $e'),
+        backgroundColor: AppColors.error,
+      ));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _editCompletionDate(BuildContext context) async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: award.completedAt ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      helpText: 'SET AWARD COMPLETION DATE',
+    );
+    if (pickedDate == null || !mounted) return;
+
+    setState(() => _isSaving = true);
+    try {
+      final repo = GetIt.instance<ProgressRepository>();
+      await repo.updateAwardDates(award.id, completedAt: pickedDate);
+      if (!mounted) return;
+      context.read<ProgressBloc>().add(ProgressFetchRequested());
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Completion date updated to ${_formatDate(pickedDate)}.'),
+        backgroundColor: Colors.green,
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Error: $e'),
+        backgroundColor: AppColors.error,
+      ));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
   void _toggleRequirementStatus(
     BuildContext context,
     RequirementProgressEntity req,
   ) async {
     if (!req.isEligible) {
-      // Show age-gate ineligibility alert dialog
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -55,7 +171,7 @@ class AwardDetailPage extends StatelessWidget {
         lastDate: DateTime.now(),
         helpText: "SELECT REQUIREMENT START DATE",
       );
-      if (pickedDate != null) {
+      if (pickedDate != null && mounted) {
         context.read<ProgressBloc>().add(
               RequirementStarted(req.id, startedAt: pickedDate),
             );
@@ -68,7 +184,7 @@ class AwardDetailPage extends StatelessWidget {
         lastDate: DateTime.now(),
         helpText: "SELECT REQUIREMENT COMPLETION DATE",
       );
-      if (pickedDate != null) {
+      if (pickedDate != null && mounted) {
         context.read<ProgressBloc>().add(
               RequirementCompleted(req.id, completedAt: pickedDate),
             );
@@ -147,9 +263,110 @@ class AwardDetailPage extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 20),
+
+          // ─── Date & Progress Panel ──────────────────────────────────────
+          GlassCard(
+            borderColor: award.isCompleted
+                ? Colors.green.withAlpha(64)
+                : theme.colorScheme.primary.withAlpha(51),
+            child: StatefulBuilder(
+              builder: (context, setLocalState) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          award.isCompleted ? Icons.check_circle : Icons.event_note,
+                          color: award.isCompleted ? Colors.green : theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Date & Progress',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Start date row
+                    _DateRow(
+                      label: 'Started On',
+                      date: award.startedAt,
+                      hint: award.startDateFollowsPrereq
+                          ? 'Defaults to prerequisite completion date'
+                          : 'No default — set freely',
+                      icon: Icons.play_arrow_rounded,
+                      color: Colors.blue,
+                      onTap: () => _editStartDate(context),
+                      isSaving: _isSaving,
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Completion date row
+                    _DateRow(
+                      label: 'Completed On',
+                      date: award.completedAt,
+                      hint: 'Not yet completed',
+                      icon: Icons.flag_rounded,
+                      color: Colors.green,
+                      onTap: () => _editCompletionDate(context),
+                      isSaving: _isSaving,
+                    ),
+
+                    if (!award.isCompleted) ...[
+                      const Divider(height: 28),
+
+                      // Propagate toggle
+                      Row(
+                        children: [
+                          Switch(
+                            value: _propagateToParents,
+                            onChanged: (v) => setState(() => _propagateToParents = v),
+                            activeColor: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Auto-complete prerequisite awards',
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Mark Complete button
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: _isSaving ? null : () => _markCompleted(context),
+                          icon: _isSaving
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Icon(Icons.check_circle_outline),
+                          label: const Text('Mark Award as Completed'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ),
           const SizedBox(height: 24),
 
-          // Requirement Groups List
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -365,6 +582,81 @@ class Circle extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
+      ),
+    );
+  }
+}
+
+/// A tappable row displaying a date (or placeholder) with an edit icon.
+class _DateRow extends StatelessWidget {
+  final String label;
+  final DateTime? date;
+  final String hint;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  final bool isSaving;
+
+  const _DateRow({
+    required this.label,
+    required this.date,
+    required this.hint,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+    required this.isSaving,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dateStr = date != null
+        ? '${date!.year}-${date!.month.toString().padLeft(2, '0')}-${date!.day.toString().padLeft(2, '0')}'
+        : null;
+
+    return InkWell(
+      onTap: isSaving ? null : onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withAlpha(20),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withAlpha(60)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                      fontSize: 11,
+                    ),
+                  ),
+                  Text(
+                    dateStr ?? hint,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: dateStr != null ? FontWeight.bold : FontWeight.normal,
+                      color: dateStr != null ? color : Colors.grey[500],
+                      fontStyle: dateStr == null ? FontStyle.italic : FontStyle.normal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.edit_calendar_outlined,
+              size: 16,
+              color: Colors.grey[400],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -53,6 +53,10 @@ class AwardProgressDetail(BaseModel):
     min_service_months: Optional[int]
     prerequisite_award_id: Optional[str] = None
     is_optional: bool = False
+    min_months_after_prereq_started: Optional[int] = None
+    start_date_follows_prereq: bool = True
+    started_at: Optional[date] = None          # member's actual start date for this award
+    completed_at: Optional[date] = None        # member's actual completion date
     groups: List[RequirementGroupProgress]
     percent_completed: float = 0.0
     is_completed: bool = False
@@ -69,6 +73,17 @@ class StartProgressRequest(BaseModel):
 
 class CompleteProgressRequest(BaseModel):
     completed_at: Optional[date] = None
+
+# ─── Award-level date management ──────────────────────────────
+class AwardDateUpdate(BaseModel):
+    """Member-controlled: set custom start and/or completion dates for their ScoutAward record."""
+    started_at: Optional[date] = None
+    completed_at: Optional[date] = None
+
+class AwardCompleteRequest(BaseModel):
+    """Mark an award as completed. Optionally propagates completion up the prerequisite tree."""
+    completed_at: Optional[date] = None          # defaults to today if not provided
+    propagate_to_parents: bool = True            # auto-complete uncompleted prerequisites
 
 class RecommendationItem(BaseModel):
     award_id: str

@@ -124,6 +124,8 @@ class _AdminSectionAwardsPageState extends State<AdminSectionAwardsPage> {
 
     String? selectedPrereqId = "none";
     bool isOptional = false;
+    bool startDateFollowsPrereq = true;
+    final minMonthsAfterPrereqStartedController = TextEditingController();
 
     showDialog(
       context: context,
@@ -200,6 +202,27 @@ class _AdminSectionAwardsPageState extends State<AdminSectionAwardsPage> {
                 ),
                 const SizedBox(height: 8),
                 TextField(
+                  controller: minMonthsAfterPrereqStartedController,
+                  decoration: const InputDecoration(
+                    labelText: "Engagement: Min months after prereq STARTED",
+                    hintText: "e.g. 3 (can start 3 months after prereq started)",
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Expanded(child: Text("Start date defaults to prereq completion?", style: TextStyle(fontSize: 13))),
+                    Switch(
+                      value: startDateFollowsPrereq,
+                      onChanged: (val) {
+                        setDialogState(() => startDateFollowsPrereq = val);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
                   controller: displayOrderController,
                   decoration: const InputDecoration(labelText: "Display Order"),
                   keyboardType: TextInputType.number,
@@ -240,6 +263,8 @@ class _AdminSectionAwardsPageState extends State<AdminSectionAwardsPage> {
                       'min_service_months': int.tryParse(minServiceController.text),
                       'prerequisite_award_id': selectedPrereqId == "none" ? null : selectedPrereqId,
                       'is_optional': isOptional,
+                      'min_months_after_prereq_started': int.tryParse(minMonthsAfterPrereqStartedController.text),
+                      'start_date_follows_prereq': startDateFollowsPrereq,
                       'display_order': int.tryParse(displayOrderController.text) ?? 1,
                     },
                   );
@@ -271,6 +296,10 @@ class _AdminSectionAwardsPageState extends State<AdminSectionAwardsPage> {
 
     String? selectedPrereqId = award['prerequisite_award_id'] as String? ?? "none";
     bool isOptional = (award['is_optional'] as bool?) ?? false;
+    bool startDateFollowsPrereq = (award['start_date_follows_prereq'] as bool?) ?? true;
+    final minMonthsAfterPrereqStartedController = TextEditingController(
+      text: award['min_months_after_prereq_started']?.toString() ?? '',
+    );
 
     // Filter self out of other awards options
     final otherAwards = _awards.where((a) => a['id'] != awardId).toList();
@@ -345,6 +374,27 @@ class _AdminSectionAwardsPageState extends State<AdminSectionAwardsPage> {
                 ),
                 const SizedBox(height: 8),
                 TextField(
+                  controller: minMonthsAfterPrereqStartedController,
+                  decoration: const InputDecoration(
+                    labelText: "Engagement: Min months after prereq STARTED",
+                    hintText: "e.g. 3 (can start 3 months after prereq started)",
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Expanded(child: Text("Start date defaults to prereq completion?", style: TextStyle(fontSize: 13))),
+                    Switch(
+                      value: startDateFollowsPrereq,
+                      onChanged: (val) {
+                        setDialogState(() => startDateFollowsPrereq = val);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
                   controller: displayOrderController,
                   decoration: const InputDecoration(labelText: "Display Order"),
                   keyboardType: TextInputType.number,
@@ -371,6 +421,8 @@ class _AdminSectionAwardsPageState extends State<AdminSectionAwardsPage> {
                       'min_service_months': int.tryParse(minServiceController.text),
                       'prerequisite_award_id': selectedPrereqId == "none" ? null : selectedPrereqId,
                       'is_optional': isOptional,
+                      'min_months_after_prereq_started': int.tryParse(minMonthsAfterPrereqStartedController.text),
+                      'start_date_follows_prereq': startDateFollowsPrereq,
                       'display_order': int.tryParse(displayOrderController.text) ?? 1,
                     },
                   );

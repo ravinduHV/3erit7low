@@ -67,80 +67,102 @@ class _AdminSyllabusPageState extends State<AdminSyllabusPage> {
     final colorController = TextEditingController(text: "#1B4332");
     final minAgeController = TextEditingController();
     final maxAgeController = TextEditingController();
+    String? selectedLinkedSectionId = "none";
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Add New Section"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: idController,
-                decoration: const InputDecoration(labelText: "Section ID (e.g. rover)"),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: "Section Name (e.g. Rover Scout)"),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: slugController,
-                decoration: const InputDecoration(labelText: "Slug"),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: colorController,
-                decoration: const InputDecoration(labelText: "Color Hex Code"),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: minAgeController,
-                decoration: const InputDecoration(labelText: "Minimum Age"),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: maxAgeController,
-                decoration: const InputDecoration(labelText: "Maximum Age"),
-                keyboardType: TextInputType.number,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                await _dio.post(
-                  '${AppConstants.apiBaseUrl}/v1/admin/sections',
-                  data: {
-                    'id': idController.text.trim(),
-                    'name': nameController.text.trim(),
-                    'slug': slugController.text.trim(),
-                    'color_hex': colorController.text.trim(),
-                    'min_age': double.tryParse(minAgeController.text),
-                    'max_age': double.tryParse(maxAgeController.text),
-                    'role_type': 'scout',
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text("Add New Section"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: idController,
+                  decoration: const InputDecoration(labelText: "Section ID (e.g. rover)"),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: "Section Name (e.g. Rover Scout)"),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: slugController,
+                  decoration: const InputDecoration(labelText: "Slug"),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: colorController,
+                  decoration: const InputDecoration(labelText: "Color Hex Code"),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: minAgeController,
+                  decoration: const InputDecoration(labelText: "Minimum Age"),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: maxAgeController,
+                  decoration: const InputDecoration(labelText: "Maximum Age"),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: selectedLinkedSectionId,
+                  decoration: const InputDecoration(
+                    labelText: "Linked Predecessor Section",
+                    helperText: "Carries forward member's service credit",
+                  ),
+                  items: [
+                    const DropdownMenuItem(value: "none", child: Text("None")),
+                    ..._sections.map((s) => DropdownMenuItem(
+                          value: s['id'] as String,
+                          child: Text(s['name'] as String),
+                        )),
+                  ],
+                  onChanged: (val) {
+                    setDialogState(() => selectedLinkedSectionId = val);
                   },
-                );
-                Navigator.pop(context);
-                _loadSyllabus();
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Error creating section: ${e.toString()}")),
-                );
-              }
-            },
-            child: const Text("Add"),
+                ),
+              ],
+            ),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await _dio.post(
+                    '${AppConstants.apiBaseUrl}/v1/admin/sections',
+                    data: {
+                      'id': idController.text.trim(),
+                      'name': nameController.text.trim(),
+                      'slug': slugController.text.trim(),
+                      'color_hex': colorController.text.trim(),
+                      'min_age': double.tryParse(minAgeController.text),
+                      'max_age': double.tryParse(maxAgeController.text),
+                      'role_type': 'scout',
+                      'linked_section_id': selectedLinkedSectionId == "none" ? null : selectedLinkedSectionId,
+                    },
+                  );
+                  Navigator.pop(context);
+                  _loadSyllabus();
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Error creating section: ${e.toString()}")),
+                  );
+                }
+              },
+              child: const Text("Add"),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -151,73 +173,98 @@ class _AdminSyllabusPageState extends State<AdminSyllabusPage> {
     final colorController = TextEditingController(text: sec['color_hex']);
     final minAgeController = TextEditingController(text: sec['min_age']?.toString() ?? '');
     final maxAgeController = TextEditingController(text: sec['max_age']?.toString() ?? '');
+    String? selectedLinkedSectionId = sec['linked_section_id'] as String? ?? "none";
+
+    // Filter out the current section so a section can't link to itself
+    final otherSections = _sections.where((s) => s['id'] != sec['id']).toList();
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Edit Section: ${sec['id']}"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: "Section Name"),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: slugController,
-                decoration: const InputDecoration(labelText: "Slug"),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: colorController,
-                decoration: const InputDecoration(labelText: "Color Hex Code"),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: minAgeController,
-                decoration: const InputDecoration(labelText: "Minimum Age"),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: maxAgeController,
-                decoration: const InputDecoration(labelText: "Maximum Age"),
-                keyboardType: TextInputType.number,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                await _dio.patch(
-                  '${AppConstants.apiBaseUrl}/v1/admin/sections/${sec['id']}',
-                  data: {
-                    'name': nameController.text.trim(),
-                    'slug': slugController.text.trim(),
-                    'color_hex': colorController.text.trim(),
-                    'min_age': double.tryParse(minAgeController.text),
-                    'max_age': double.tryParse(maxAgeController.text),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text("Edit Section: ${sec['id']}"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: "Section Name"),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: slugController,
+                  decoration: const InputDecoration(labelText: "Slug"),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: colorController,
+                  decoration: const InputDecoration(labelText: "Color Hex Code"),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: minAgeController,
+                  decoration: const InputDecoration(labelText: "Minimum Age"),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: maxAgeController,
+                  decoration: const InputDecoration(labelText: "Maximum Age"),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: selectedLinkedSectionId,
+                  decoration: const InputDecoration(
+                    labelText: "Linked Predecessor Section",
+                    helperText: "Carries forward member's service credit",
+                  ),
+                  items: [
+                    const DropdownMenuItem(value: "none", child: Text("None")),
+                    ...otherSections.map((s) => DropdownMenuItem(
+                          value: s['id'] as String,
+                          child: Text(s['name'] as String),
+                        )),
+                  ],
+                  onChanged: (val) {
+                    setDialogState(() => selectedLinkedSectionId = val);
                   },
-                );
-                Navigator.pop(context);
-                _loadSyllabus();
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Error updating section: ${e.toString()}")),
-                );
-              }
-            },
-            child: const Text("Save"),
+                ),
+              ],
+            ),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await _dio.patch(
+                    '${AppConstants.apiBaseUrl}/v1/admin/sections/${sec['id']}',
+                    data: {
+                      'name': nameController.text.trim(),
+                      'slug': slugController.text.trim(),
+                      'color_hex': colorController.text.trim(),
+                      'min_age': double.tryParse(minAgeController.text),
+                      'max_age': double.tryParse(maxAgeController.text),
+                      'linked_section_id': selectedLinkedSectionId == "none" ? null : selectedLinkedSectionId,
+                    },
+                  );
+                  Navigator.pop(context);
+                  _loadSyllabus();
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Error updating section: ${e.toString()}")),
+                  );
+                }
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        ),
       ),
     );
   }

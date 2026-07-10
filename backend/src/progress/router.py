@@ -6,7 +6,8 @@ from src.db.models import User
 from src.auth.dependencies import get_current_user
 from src.progress.schemas import (
     SectionProgressSummary, PoolSelectionCreate, PoolSelectionResponse,
-    StartProgressRequest, CompleteProgressRequest, PredictionResponse
+    StartProgressRequest, CompleteProgressRequest, PredictionResponse,
+    AwardDateUpdate, AwardCompleteRequest
 )
 from src.progress import service
 from src.progress import prediction_service
@@ -64,6 +65,46 @@ async def complete_requirement(
     completed_at = req_body.completed_at if req_body else None
     await service.complete_requirement_progress(db, current_user.id, req_id, completed_at)
     return {"message": "Requirement marked as completed"}
+
+
+@router.post("/awards/{award_id}/complete", status_code=status.HTTP_200_OK)
+async def complete_award(
+    award_id: str,
+    req_body: Optional[AwardCompleteRequest] = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Mark an award as completed (with optional backdated date).
+    If propagate_to_parents=True (default), also auto-completes uncompleted prerequisite
+    awards up the entire prerequisite chain, each dated one day before the next.
+    """
+    completed_at = req_body.completed_at if req_body else None
+    propagate = req_body.propagate_to_parents if req_body else True
+    completed_ids = await service.complete_award_with_propagation(
+        db, current_user.id, award_id, completed_at, propagate
+    )
+    await db.commit()
+    return {"message": "Award marked as completed", "completed_award_ids": completed_ids}
+
+
+@router.patch("/awards/{award_id}/dates", status_code=status.HTTP_200_OK)
+async def update_award_dates(
+    award_id: str,
+    req_body: AwardDateUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Member-controlled: update the start and/or completion date of an award record.
+    The prediction engine will automatically use these dates when recalculating forecasts.
+    """
+    await service.update_award_dates(
+        db, current_user.id, award_id, req_body.started_at, req_body.completed_at
+    )
+    await db.commit()
+    return {"message": "Award dates updated"}
+
 
 @router.post("/pool-selections", response_model=PoolSelectionResponse, status_code=status.HTTP_201_CREATED)
 async def make_pool_selection(

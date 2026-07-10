@@ -18,11 +18,14 @@ class Section(Base):
     display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     role_type: Mapped[str] = mapped_column(String(20), default="scout", nullable=False) # scout | leader
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # Linked predecessor section: credits service time from that section toward this one
+    linked_section_id: Mapped[Optional[str]] = mapped_column(String(50), ForeignKey("sections.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     awards: Mapped[List["Award"]] = relationship("Award", back_populates="section", cascade="all, delete-orphan", order_by="Award.display_order")
     users: Mapped[List["User"]] = relationship("User", back_populates="section")
+    linked_section: Mapped[Optional["Section"]] = relationship("Section", remote_side="Section.id", foreign_keys="Section.linked_section_id")
 
 
 class Award(Base):
@@ -38,6 +41,10 @@ class Award(Base):
     min_service_months: Mapped[Optional[int]] = mapped_column(Integer)
     prerequisite_award_id: Mapped[Optional[str]] = mapped_column(String(50), ForeignKey("awards.id", ondelete="SET NULL"), nullable=True)
     is_optional: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Engagement constraint: can start this award N months after the PREREQUISITE was STARTED (not completed)
+    min_months_after_prereq_started: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    # If True: award start defaults to prerequisite completion date; if False: member picks freely
+    start_date_follows_prereq: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)

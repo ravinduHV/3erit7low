@@ -102,6 +102,10 @@ class AwardProgressEntity extends Equatable {
   final int? minServiceMonths;
   final String? prerequisiteAwardId;
   final bool isOptional;
+  final int? minMonthsAfterPrereqStarted;
+  final bool startDateFollowsPrereq;
+  final DateTime? startedAt;    // member's actual ScoutAward start date
+  final DateTime? completedAt;  // member's actual ScoutAward completion date
   final List<RequirementGroupProgressEntity> groups;
   final double percentCompleted;
   final bool isCompleted;
@@ -116,6 +120,10 @@ class AwardProgressEntity extends Equatable {
     this.minServiceMonths,
     this.prerequisiteAwardId,
     this.isOptional = false,
+    this.minMonthsAfterPrereqStarted,
+    this.startDateFollowsPrereq = true,
+    this.startedAt,
+    this.completedAt,
     required this.groups,
     required this.percentCompleted,
     required this.isCompleted,
@@ -132,6 +140,10 @@ class AwardProgressEntity extends Equatable {
         minServiceMonths,
         prerequisiteAwardId,
         isOptional,
+        minMonthsAfterPrereqStarted,
+        startDateFollowsPrereq,
+        startedAt,
+        completedAt,
         groups,
         percentCompleted,
         isCompleted,

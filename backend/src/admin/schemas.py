@@ -14,6 +14,7 @@ class SectionBase(BaseModel):
     display_order: int = 0
     role_type: str = Field("scout", max_length=20) # scout | leader
     is_active: bool = True
+    linked_section_id: Optional[str] = None  # predecessor section for cross-section service credit
 
 class SectionCreate(SectionBase):
     id: str = Field(..., max_length=50)
@@ -29,6 +30,7 @@ class SectionUpdate(BaseModel):
     display_order: Optional[int] = None
     role_type: Optional[str] = None
     is_active: Optional[bool] = None
+    linked_section_id: Optional[str] = None
 
 class SectionAdminResponse(SectionBase):
     id: str
@@ -49,6 +51,10 @@ class AwardBase(BaseModel):
     min_service_months: Optional[int] = None
     prerequisite_award_id: Optional[str] = None
     is_optional: bool = False
+    # Engagement: can start this award N months after prerequisite was STARTED
+    min_months_after_prereq_started: Optional[int] = None
+    # If True: award start defaults to prerequisite completion date
+    start_date_follows_prereq: bool = True
     display_order: int = 0
     is_active: bool = True
 
@@ -65,6 +71,8 @@ class AwardUpdate(BaseModel):
     min_service_months: Optional[int] = None
     prerequisite_award_id: Optional[str] = None
     is_optional: Optional[bool] = None
+    min_months_after_prereq_started: Optional[int] = None
+    start_date_follows_prereq: Optional[bool] = None
     display_order: Optional[int] = None
     is_active: Optional[bool] = None
 

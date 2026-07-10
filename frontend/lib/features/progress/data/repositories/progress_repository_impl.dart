@@ -64,4 +64,41 @@ class ProgressRepositoryImpl implements ProgressRepository {
   Future<void> removePoolRequirement(String groupId, String reqId) async {
     await _dio.delete('${AppConstants.apiBaseUrl}/v1/progress/pool-selections/$groupId/$reqId');
   }
+
+  @override
+  Future<List<String>> completeAward(
+    String awardId, {
+    DateTime? completedAt,
+    bool propagateToParents = true,
+  }) async {
+    final String? dateStr = completedAt != null
+        ? '${completedAt.year}-${completedAt.month.toString().padLeft(2, '0')}-${completedAt.day.toString().padLeft(2, '0')}'
+        : null;
+    final response = await _dio.post(
+      '${AppConstants.apiBaseUrl}/v1/progress/awards/$awardId/complete',
+      data: {
+        if (dateStr != null) 'completed_at': dateStr,
+        'propagate_to_parents': propagateToParents,
+      },
+    );
+    final ids = (response.data['completed_award_ids'] as List<dynamic>?) ?? [];
+    return ids.map((e) => e as String).toList();
+  }
+
+  @override
+  Future<void> updateAwardDates(
+    String awardId, {
+    DateTime? startedAt,
+    DateTime? completedAt,
+  }) async {
+    String _fmt(DateTime d) =>
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    await _dio.patch(
+      '${AppConstants.apiBaseUrl}/v1/progress/awards/$awardId/dates',
+      data: {
+        if (startedAt != null) 'started_at': _fmt(startedAt),
+        if (completedAt != null) 'completed_at': _fmt(completedAt),
+      },
+    );
+  }
 }
