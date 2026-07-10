@@ -51,6 +51,8 @@ class AwardProgressDetail(BaseModel):
     min_age: Optional[float]
     max_age: Optional[float]
     min_service_months: Optional[int]
+    prerequisite_award_id: Optional[str] = None
+    is_optional: bool = False
     groups: List[RequirementGroupProgress]
     percent_completed: float = 0.0
     is_completed: bool = False
@@ -67,3 +69,18 @@ class StartProgressRequest(BaseModel):
 
 class CompleteProgressRequest(BaseModel):
     completed_at: Optional[date] = None
+
+class RecommendationItem(BaseModel):
+    award_id: str
+    award_name: str
+    status: str  # recommended | locked_prerequisite | locked_service | locked_age | completed
+    reason: str
+    target_completion_date: Optional[date] = None
+
+class PredictionResponse(BaseModel):
+    current_age: float
+    remaining_days_in_section: int
+    highest_achievable_award_id: Optional[str] = None
+    highest_achievable_award_name: Optional[str] = None
+    is_aging_out_warning: bool
+    recommendations: List[RecommendationItem]

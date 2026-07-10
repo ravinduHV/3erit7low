@@ -47,6 +47,8 @@ class AwardBase(BaseModel):
     min_age: Optional[float] = None
     max_age: Optional[float] = None
     min_service_months: Optional[int] = None
+    prerequisite_award_id: Optional[str] = None
+    is_optional: bool = False
     display_order: int = 0
     is_active: bool = True
 
@@ -61,6 +63,8 @@ class AwardUpdate(BaseModel):
     min_age: Optional[float] = None
     max_age: Optional[float] = None
     min_service_months: Optional[int] = None
+    prerequisite_award_id: Optional[str] = None
+    is_optional: Optional[bool] = None
     display_order: Optional[int] = None
     is_active: Optional[bool] = None
 

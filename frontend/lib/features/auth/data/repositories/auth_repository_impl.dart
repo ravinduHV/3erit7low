@@ -124,7 +124,10 @@ class AuthRepositoryImpl implements AuthRepository {
       try {
         await _dio.post(
           '${AppConstants.authBaseUrl}/sign-out',
-          options: Options(headers: _getAuthHeaders(token: jwt)),
+          options: Options(
+            headers: _getAuthHeaders(), // Do not send the FastAPI JWT to Neon Auth
+            extra: {'withCredentials': true}, // Enable cookies on Web
+          ),
         );
       } catch (_) {
         // Best-effort — always clear local token

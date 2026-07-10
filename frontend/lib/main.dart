@@ -130,25 +130,31 @@ class _AppRouterState extends State<AppRouter> {
 
   @override
   Widget build(BuildContext context) {
-    // Map active scout section dynamically for theme configuration
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) {
-        String? sectionId;
-        if (state is Authenticated) {
-          sectionId = state.user.sectionId;
-        } else if (state is OnboardingRequired) {
-          sectionId = state.user.sectionId;
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is Unauthenticated) {
+          _router.go('/login');
         }
-
-        return MaterialApp.router(
-          title: 'MeritFlow',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.getTheme(context, isDark: false, sectionId: sectionId),
-          darkTheme: AppTheme.getTheme(context, isDark: true, sectionId: sectionId),
-          themeMode: ThemeMode.system,
-          routerConfig: _router,
-        );
       },
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          String? sectionId;
+          if (state is Authenticated) {
+            sectionId = state.user.sectionId;
+          } else if (state is OnboardingRequired) {
+            sectionId = state.user.sectionId;
+          }
+
+          return MaterialApp.router(
+            title: 'MeritFlow',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.getTheme(context, isDark: false, sectionId: sectionId),
+            darkTheme: AppTheme.getTheme(context, isDark: true, sectionId: sectionId),
+            themeMode: ThemeMode.system,
+            routerConfig: _router,
+          );
+        },
+      ),
     );
   }
 }

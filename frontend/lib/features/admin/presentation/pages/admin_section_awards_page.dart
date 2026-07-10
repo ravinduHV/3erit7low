@@ -122,105 +122,139 @@ class _AdminSectionAwardsPageState extends State<AdminSectionAwardsPage> {
     final minServiceController = TextEditingController();
     final displayOrderController = TextEditingController(text: "1");
 
+    String? selectedPrereqId = "none";
+    bool isOptional = false;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Add Progressive Award"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: idController,
-                decoration: const InputDecoration(labelText: "Award ID (e.g. jr_membership)"),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: "Award Name"),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: descriptionController,
-                decoration: const InputDecoration(labelText: "Description"),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: imageController,
-                decoration: const InputDecoration(labelText: "Badge Asset Image Path"),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: minAgeController,
-                decoration: const InputDecoration(labelText: "Minimum Age Gate"),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: maxAgeController,
-                decoration: const InputDecoration(labelText: "Maximum Age Gate"),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: minServiceController,
-                decoration: const InputDecoration(labelText: "Min Service Period (Months)"),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: displayOrderController,
-                decoration: const InputDecoration(labelText: "Display Order"),
-                keyboardType: TextInputType.number,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (idController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Award ID cannot be empty")),
-                );
-                return;
-              }
-              if (nameController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Award Name cannot be empty")),
-                );
-                return;
-              }
-              try {
-                await _dio.post(
-                  '${AppConstants.apiBaseUrl}/v1/admin/awards',
-                  data: {
-                    'id': idController.text.trim(),
-                    'section_id': widget.sectionId,
-                    'name': nameController.text.trim(),
-                    'description': descriptionController.text.trim(),
-                    'badge_image_url': imageController.text.trim(),
-                    'min_age': double.tryParse(minAgeController.text),
-                    'max_age': double.tryParse(maxAgeController.text),
-                    'min_service_months': int.tryParse(minServiceController.text),
-                    'display_order': int.tryParse(displayOrderController.text) ?? 1,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text("Add Progressive Award"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: idController,
+                  decoration: const InputDecoration(labelText: "Award ID (e.g. jr_membership)"),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: "Award Name"),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(labelText: "Description"),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: imageController,
+                  decoration: const InputDecoration(labelText: "Badge Asset Image Path"),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: selectedPrereqId,
+                  decoration: const InputDecoration(labelText: "Prerequisite Award"),
+                  items: [
+                    const DropdownMenuItem(value: "none", child: Text("None")),
+                    ..._awards.map((a) => DropdownMenuItem(
+                          value: a['id'] as String,
+                          child: Text(a['name'] as String),
+                        )),
+                  ],
+                  onChanged: (val) {
+                    setDialogState(() => selectedPrereqId = val);
                   },
-                );
-                Navigator.pop(context);
-                _loadAwards();
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Error creating award: ${e.toString()}")),
-                );
-              }
-            },
-            child: const Text("Add"),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Text("Is Optional Award?"),
+                    Checkbox(
+                      value: isOptional,
+                      onChanged: (val) {
+                        setDialogState(() => isOptional = val ?? false);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: minAgeController,
+                  decoration: const InputDecoration(labelText: "Minimum Age Gate"),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: maxAgeController,
+                  decoration: const InputDecoration(labelText: "Maximum Age Gate"),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: minServiceController,
+                  decoration: const InputDecoration(labelText: "Min Service Period (Months)"),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: displayOrderController,
+                  decoration: const InputDecoration(labelText: "Display Order"),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (idController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Award ID cannot be empty")),
+                  );
+                  return;
+                }
+                if (nameController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Award Name cannot be empty")),
+                  );
+                  return;
+                }
+                try {
+                  await _dio.post(
+                    '${AppConstants.apiBaseUrl}/v1/admin/awards',
+                    data: {
+                      'id': idController.text.trim(),
+                      'section_id': widget.sectionId,
+                      'name': nameController.text.trim(),
+                      'description': descriptionController.text.trim(),
+                      'badge_image_url': imageController.text.trim(),
+                      'min_age': double.tryParse(minAgeController.text),
+                      'max_age': double.tryParse(maxAgeController.text),
+                      'min_service_months': int.tryParse(minServiceController.text),
+                      'prerequisite_award_id': selectedPrereqId == "none" ? null : selectedPrereqId,
+                      'is_optional': isOptional,
+                      'display_order': int.tryParse(displayOrderController.text) ?? 1,
+                    },
+                  );
+                  Navigator.pop(context);
+                  _loadAwards();
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Error creating award: ${e.toString()}")),
+                  );
+                }
+              },
+              child: const Text("Add"),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -235,86 +269,123 @@ class _AdminSectionAwardsPageState extends State<AdminSectionAwardsPage> {
     final minServiceController = TextEditingController(text: award['min_service_months']?.toString() ?? '');
     final displayOrderController = TextEditingController(text: award['display_order']?.toString() ?? '1');
 
+    String? selectedPrereqId = award['prerequisite_award_id'] as String? ?? "none";
+    bool isOptional = (award['is_optional'] as bool?) ?? false;
+
+    // Filter self out of other awards options
+    final otherAwards = _awards.where((a) => a['id'] != awardId).toList();
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Edit Award: $awardId"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: "Award Name"),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: descriptionController,
-                decoration: const InputDecoration(labelText: "Description"),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: imageController,
-                decoration: const InputDecoration(labelText: "Badge Asset Image Path"),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: minAgeController,
-                decoration: const InputDecoration(labelText: "Minimum Age Gate"),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: maxAgeController,
-                decoration: const InputDecoration(labelText: "Maximum Age Gate"),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: minServiceController,
-                decoration: const InputDecoration(labelText: "Min Service Period (Months)"),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: displayOrderController,
-                decoration: const InputDecoration(labelText: "Display Order"),
-                keyboardType: TextInputType.number,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                await _dio.patch(
-                  '${AppConstants.apiBaseUrl}/v1/admin/awards/$awardId',
-                  data: {
-                    'name': nameController.text.trim(),
-                    'description': descriptionController.text.trim(),
-                    'badge_image_url': imageController.text.trim(),
-                    'min_age': double.tryParse(minAgeController.text),
-                    'max_age': double.tryParse(maxAgeController.text),
-                    'min_service_months': int.tryParse(minServiceController.text),
-                    'display_order': int.tryParse(displayOrderController.text) ?? 1,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text("Edit Award: $awardId"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: "Award Name"),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(labelText: "Description"),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: imageController,
+                  decoration: const InputDecoration(labelText: "Badge Asset Image Path"),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: selectedPrereqId,
+                  decoration: const InputDecoration(labelText: "Prerequisite Award"),
+                  items: [
+                    const DropdownMenuItem(value: "none", child: Text("None")),
+                    ...otherAwards.map((a) => DropdownMenuItem(
+                          value: a['id'] as String,
+                          child: Text(a['name'] as String),
+                        )),
+                  ],
+                  onChanged: (val) {
+                    setDialogState(() => selectedPrereqId = val);
                   },
-                );
-                Navigator.pop(context);
-                _loadAwards();
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Error updating award: ${e.toString()}")),
-                );
-              }
-            },
-            child: const Text("Save"),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Text("Is Optional Award?"),
+                    Checkbox(
+                      value: isOptional,
+                      onChanged: (val) {
+                        setDialogState(() => isOptional = val ?? false);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: minAgeController,
+                  decoration: const InputDecoration(labelText: "Minimum Age Gate"),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: maxAgeController,
+                  decoration: const InputDecoration(labelText: "Maximum Age Gate"),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: minServiceController,
+                  decoration: const InputDecoration(labelText: "Min Service Period (Months)"),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: displayOrderController,
+                  decoration: const InputDecoration(labelText: "Display Order"),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await _dio.patch(
+                    '${AppConstants.apiBaseUrl}/v1/admin/awards/$awardId',
+                    data: {
+                      'name': nameController.text.trim(),
+                      'description': descriptionController.text.trim(),
+                      'badge_image_url': imageController.text.trim(),
+                      'min_age': double.tryParse(minAgeController.text),
+                      'max_age': double.tryParse(maxAgeController.text),
+                      'min_service_months': int.tryParse(minServiceController.text),
+                      'prerequisite_award_id': selectedPrereqId == "none" ? null : selectedPrereqId,
+                      'is_optional': isOptional,
+                      'display_order': int.tryParse(displayOrderController.text) ?? 1,
+                    },
+                  );
+                  Navigator.pop(context);
+                  _loadAwards();
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Error updating award: ${e.toString()}")),
+                  );
+                }
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        ),
       ),
     );
   }

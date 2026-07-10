@@ -407,6 +407,8 @@ async def get_scout_progress_summary(
                 min_age=award.min_age,
                 max_age=award.max_age,
                 min_service_months=award.min_service_months,
+                prerequisite_award_id=award.prerequisite_award_id,
+                is_optional=award.is_optional,
                 groups=award_groups_progress,
                 percent_completed=round(percent, 1),
                 is_completed=is_completed

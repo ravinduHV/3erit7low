@@ -100,6 +100,8 @@ class AwardProgressEntity extends Equatable {
   final double? minAge;
   final double? maxAge;
   final int? minServiceMonths;
+  final String? prerequisiteAwardId;
+  final bool isOptional;
   final List<RequirementGroupProgressEntity> groups;
   final double percentCompleted;
   final bool isCompleted;
@@ -112,6 +114,8 @@ class AwardProgressEntity extends Equatable {
     this.minAge,
     this.maxAge,
     this.minServiceMonths,
+    this.prerequisiteAwardId,
+    this.isOptional = false,
     required this.groups,
     required this.percentCompleted,
     required this.isCompleted,
@@ -126,6 +130,8 @@ class AwardProgressEntity extends Equatable {
         minAge,
         maxAge,
         minServiceMonths,
+        prerequisiteAwardId,
+        isOptional,
         groups,
         percentCompleted,
         isCompleted,
@@ -149,4 +155,51 @@ class SectionProgressSummaryEntity extends Equatable {
 
   @override
   List<Object?> get props => [id, name, colorHex, iconName, awards];
+}
+
+class RecommendationItemEntity extends Equatable {
+  final String awardId;
+  final String awardName;
+  final String status;
+  final String reason;
+  final DateTime? targetCompletionDate;
+
+  const RecommendationItemEntity({
+    required this.awardId,
+    required this.awardName,
+    required this.status,
+    required this.reason,
+    this.targetCompletionDate,
+  });
+
+  @override
+  List<Object?> get props => [awardId, awardName, status, reason, targetCompletionDate];
+}
+
+class PredictionEntity extends Equatable {
+  final double currentAge;
+  final int remainingDaysInSection;
+  final String? highestAchievableAwardId;
+  final String? highestAchievableAwardName;
+  final bool isAgingOutWarning;
+  final List<RecommendationItemEntity> recommendations;
+
+  const PredictionEntity({
+    required this.currentAge,
+    required this.remainingDaysInSection,
+    this.highestAchievableAwardId,
+    this.highestAchievableAwardName,
+    required this.isAgingOutWarning,
+    required this.recommendations,
+  });
+
+  @override
+  List<Object?> get props => [
+        currentAge,
+        remainingDaysInSection,
+        highestAchievableAwardId,
+        highestAchievableAwardName,
+        isAgingOutWarning,
+        recommendations,
+      ];
 }

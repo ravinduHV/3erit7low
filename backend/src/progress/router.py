@@ -6,11 +6,26 @@ from src.db.models import User
 from src.auth.dependencies import get_current_user
 from src.progress.schemas import (
     SectionProgressSummary, PoolSelectionCreate, PoolSelectionResponse,
-    StartProgressRequest, CompleteProgressRequest
+    StartProgressRequest, CompleteProgressRequest, PredictionResponse
 )
 from src.progress import service
+from src.progress import prediction_service
 
 router = APIRouter(prefix="/progress", tags=["Progress & Tracking"])
+
+@router.get("/predictions", response_model=PredictionResponse)
+async def get_predictions(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Generate path recommendations and highest award forecast for the active scout."""
+    res = await prediction_service.get_progress_predictions(db, current_user)
+    if not res:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User has not set an active section yet. Complete onboarding first."
+        )
+    return res
 
 @router.get("/summary", response_model=SectionProgressSummary)
 async def get_summary(

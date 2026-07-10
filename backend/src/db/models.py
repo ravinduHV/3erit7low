@@ -36,12 +36,15 @@ class Award(Base):
     min_age: Mapped[Optional[float]] = mapped_column(Numeric(4, 1))
     max_age: Mapped[Optional[float]] = mapped_column(Numeric(4, 1))
     min_service_months: Mapped[Optional[int]] = mapped_column(Integer)
+    prerequisite_award_id: Mapped[Optional[str]] = mapped_column(String(50), ForeignKey("awards.id", ondelete="SET NULL"), nullable=True)
+    is_optional: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     section: Mapped["Section"] = relationship("Section", back_populates="awards")
+    prerequisite: Mapped[Optional["Award"]] = relationship("Award", remote_side="Award.id")
     requirement_groups: Mapped[List["RequirementGroup"]] = relationship(
         "RequirementGroup", back_populates="award", cascade="all, delete-orphan", order_by="RequirementGroup.display_order"
     )

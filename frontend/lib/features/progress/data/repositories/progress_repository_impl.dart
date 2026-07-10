@@ -16,6 +16,12 @@ class ProgressRepositoryImpl implements ProgressRepository {
   }
 
   @override
+  Future<PredictionEntity> getPredictions() async {
+    final response = await _dio.get('${AppConstants.apiBaseUrl}/v1/progress/predictions');
+    return PredictionModel.fromJson(response.data);
+  }
+
+  @override
   Future<void> startRequirement(String reqId, {DateTime? startedAt}) async {
     final data = startedAt != null
         ? {

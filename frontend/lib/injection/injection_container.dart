@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../features/auth/domain/repositories/auth_repository.dart';
 import '../features/auth/data/repositories/auth_repository_impl.dart';
 import '../features/auth/presentation/bloc/auth_bloc.dart';
+import '../features/auth/presentation/bloc/auth_event.dart';
 import '../features/progress/domain/repositories/progress_repository.dart';
 import '../features/progress/data/repositories/progress_repository_impl.dart';
 import '../features/progress/presentation/bloc/progress_bloc.dart';
@@ -34,6 +35,15 @@ Future<void> init() async {
         }
         return handler.next(options);
       },
+      onError: (DioException err, handler) async {
+        if (err.response?.statusCode == 401) {
+          // Clear session data on 401 Unauthorized
+          await secureStorage.delete(key: 'auth_token');
+          // Reset AuthBloc state to Unauthenticated
+          sl<AuthBloc>().add(SignOutPressed());
+        }
+        return handler.next(err);
+      },
     ),
   );
   
@@ -48,7 +58,7 @@ Future<void> init() async {
   );
 
   // 3. Blocs / Cubits
-  sl.registerFactory<AuthBloc>(
+  sl.registerLazySingleton<AuthBloc>(
     () => AuthBloc(sl<AuthRepository>()),
   );
   sl.registerFactory<ProgressBloc>(
