@@ -67,6 +67,17 @@ async def complete_requirement(
     return {"message": "Requirement marked as completed"}
 
 
+@router.delete("/requirements/{req_id}", status_code=status.HTTP_200_OK)
+async def reset_requirement(
+    req_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Reset/delete progress for a requirement."""
+    await service.delete_requirement_progress(db, current_user.id, req_id)
+    return {"message": "Requirement progress reset"}
+
+
 @router.post("/awards/{award_id}/complete", status_code=status.HTTP_200_OK)
 async def complete_award(
     award_id: str,

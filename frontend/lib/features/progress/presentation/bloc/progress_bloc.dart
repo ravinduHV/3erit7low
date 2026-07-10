@@ -11,6 +11,7 @@ class ProgressBloc extends Bloc<ProgressEvent, ProgressState> {
     on<ProgressFetchRequested>(_onProgressFetchRequested);
     on<RequirementStarted>(_onRequirementStarted);
     on<RequirementCompleted>(_onRequirementCompleted);
+    on<RequirementReset>(_onRequirementReset);
     on<PoolRequirementSelected>(_onPoolRequirementSelected);
     on<PoolRequirementRemoved>(_onPoolRequirementRemoved);
   }
@@ -73,6 +74,19 @@ class ProgressBloc extends Bloc<ProgressEvent, ProgressState> {
   ) async {
     try {
       await _progressRepository.removePoolRequirement(event.groupId, event.reqId);
+      final summary = await _progressRepository.getProgressSummary();
+      emit(ProgressLoaded(summary));
+    } catch (e) {
+      emit(ProgressError(ErrorHandler.handle(e)));
+    }
+  }
+
+  Future<void> _onRequirementReset(
+    RequirementReset event,
+    Emitter<ProgressState> emit,
+  ) async {
+    try {
+      await _progressRepository.deleteRequirement(event.reqId);
       final summary = await _progressRepository.getProgressSummary();
       emit(ProgressLoaded(summary));
     } catch (e) {

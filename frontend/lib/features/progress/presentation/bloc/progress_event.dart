@@ -46,3 +46,11 @@ class PoolRequirementRemoved extends ProgressEvent {
   @override
   List<Object?> get props => [groupId, reqId];
 }
+
+class RequirementReset extends ProgressEvent {
+  final String reqId;
+  const RequirementReset(this.reqId);
+
+  @override
+  List<Object?> get props => [reqId];
+}

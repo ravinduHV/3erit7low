@@ -66,6 +66,11 @@ class ProgressRepositoryImpl implements ProgressRepository {
   }
 
   @override
+  Future<void> deleteRequirement(String reqId) async {
+    await _dio.delete('${AppConstants.apiBaseUrl}/v1/progress/requirements/$reqId');
+  }
+
+  @override
   Future<List<String>> completeAward(
     String awardId, {
     DateTime? completedAt,

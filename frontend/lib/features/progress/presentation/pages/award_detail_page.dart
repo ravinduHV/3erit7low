@@ -163,26 +163,42 @@ class _AwardDetailPageState extends State<AwardDetailPage> {
       return;
     }
 
-    if (req.status == 'not_started') {
+    if (req.status == 'completed') {
+      // Prompt to reset/delete the completion status
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.help_outline, color: Colors.blue),
+              SizedBox(width: 10),
+              Text("Reset Progress"),
+            ],
+          ),
+          content: const Text("Would you like to clear the completion date and reset progress for this requirement?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                context.read<ProgressBloc>().add(RequirementReset(req.id));
+              },
+              child: const Text("Reset", style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Directly ask for completion date
       final pickedDate = await showDatePicker(
         context: context,
         initialDate: DateTime.now(),
         firstDate: DateTime(2000),
         lastDate: DateTime.now(),
-        helpText: "SELECT REQUIREMENT START DATE",
-      );
-      if (pickedDate != null && mounted) {
-        context.read<ProgressBloc>().add(
-              RequirementStarted(req.id, startedAt: pickedDate),
-            );
-      }
-    } else if (req.status == 'in_progress') {
-      final pickedDate = await showDatePicker(
-        context: context,
-        initialDate: DateTime.now(),
-        firstDate: req.startedAt ?? DateTime(2000),
-        lastDate: DateTime.now(),
-        helpText: "SELECT REQUIREMENT COMPLETION DATE",
+        helpText: "SELECT COMPLETION DATE",
       );
       if (pickedDate != null && mounted) {
         context.read<ProgressBloc>().add(
@@ -429,7 +445,6 @@ class _AwardDetailPageState extends State<AwardDetailPage> {
                       itemBuilder: (context, index) {
                         final req = group.requirements[index];
                         final isDone = req.status == 'completed';
-                        final isInProgress = req.status == 'in_progress';
 
                         return ListTile(
                           contentPadding: const EdgeInsets.symmetric(
@@ -459,16 +474,6 @@ class _AwardDetailPageState extends State<AwardDetailPage> {
                                   child: Text(
                                     req.description!,
                                     style: theme.textTheme.bodySmall,
-                                  ),
-                                ),
-                              const SizedBox(height: 4),
-                              if (req.startedAt != null)
-                                Text(
-                                  "Started: ${req.startedAt!.toLocal().toString().split(' ')[0]}",
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.blue[300],
-                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               if (req.completedAt != null)
@@ -534,27 +539,6 @@ class _AwardDetailPageState extends State<AwardDetailPage> {
         Icons.check_circle,
         color: Colors.green,
         size: 28,
-      );
-    }
-
-    if (req.status == 'in_progress') {
-      return Container(
-        width: 28,
-        height: 28,
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.secondary, width: 2),
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Container(
-            width: 12,
-            height: 12,
-            decoration: const BoxDecoration(
-              color: AppColors.secondary,
-              shape: BoxShape.circle,
-            ),
-          ),
-        ),
       );
     }
 

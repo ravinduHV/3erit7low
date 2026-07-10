@@ -166,6 +166,21 @@ async def complete_requirement_progress(
     return progress
 
 
+async def delete_requirement_progress(
+    db: AsyncSession,
+    user_id: str,
+    req_id: str
+) -> None:
+    """Deletes/resets progress for a requirement."""
+    await db.execute(
+        delete(ScoutProgress).where(
+            ScoutProgress.user_id == user_id,
+            ScoutProgress.requirement_id == req_id
+        )
+    )
+    await db.flush()
+
+
 # ─── POOL SELECTIONS ──────────────────────────────────────────
 
 async def save_pool_selection(
